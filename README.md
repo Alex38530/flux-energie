@@ -36,6 +36,10 @@ L'appli s'ouvre alors en plein écran, sans barre de navigateur.
 - **✕** : supprime un article du flux.
 - **📋 Synthèse du flux** : rédige un point d'actualité structuré (L'essentiel / Par filière / À surveiller) à partir des articles actuellement affichés (onglet + filtre actifs).
 - **💬 Questions** : chat en temps réel — pose une question, la réponse s'appuie d'abord sur tes articles, puis sur une recherche web si nécessaire. L'historique du chat dure le temps de la session.
+- **＋ Carnet** (sur chaque article) : génère une analyse — conclusion en quelques phrases, orientation éditoriale généralement attribuée à la source, et contexte professionnel de l'auteur — puis l'archive dans l'onglet **Carnet**. Chaque ajout consomme un appel API (quelques centimes), d'où le bouton explicite.
+- **Onglet Carnet** : toutes tes analyses archivées, avec un bouton **Exporter (.md)** pour récupérer un fichier texte de tes traces.
+
+⚠️ Les orientations de sources sont des caractérisations générales et contestables, fournies pour aider à l'esprit critique, pas des verdicts. Le contexte auteur se limite à l'information professionnelle et publique.
 
 ## Structure
 

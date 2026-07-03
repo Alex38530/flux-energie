@@ -1,7 +1,39 @@
 // Fonction serverless Vercel — /api/news
 // Nécessite la variable d'environnement ANTHROPIC_API_KEY (à définir dans Vercel).
 
-const CAT_LIST = "nucleaire | renouvelables | petrole | geopolitique";
+const CAT_LIST = "nucleaire | renouvelables | stockage | petrole | geopolitique";
+
+// Orientations éditoriales GÉNÉRALEMENT attribuées aux médias.
+// Caractérisations approximatives et contestables, données à titre indicatif
+// pour l'esprit critique — volontairement équilibrées sur tout le spectre.
+const SOURCE_LEANING = {
+  "le monde": "centre-gauche, généraliste de référence",
+  "liberation": "gauche",
+  "reporterre": "écologiste, orienté à gauche, militant sur l'environnement",
+  "mediapart": "gauche, investigation",
+  "l'humanite": "gauche",
+  "le figaro": "droite, libéral-conservateur",
+  "les echos": "libéral, orienté économie et entreprises (centre-droit)",
+  "la tribune": "économique, sensibilité centre-droit / pro-marché",
+  "l'usine nouvelle": "presse industrielle, orientation pro-industrie",
+  "bfm business": "libéral, orienté marchés et entreprises",
+  "contexte": "spécialiste des politiques publiques, plutôt factuel",
+  "connaissance des energies": "spécialisé énergie, factuel, soutenu par des acteurs du secteur",
+  "reuters": "agence de presse, ligne factuelle et neutre",
+  "associated press": "agence de presse, ligne factuelle et neutre",
+  "bloomberg": "orientation économique et pro-marché, public d'affaires",
+  "financial times": "libéral économiquement, centriste, public d'affaires",
+  "wall street journal": "informations centristes mais pages éditoriales orientées à droite",
+  "the guardian": "centre-gauche",
+  "bbc": "service public, ligne globalement centriste",
+  "s&p global": "spécialiste marchés/énergie, factuel et financier",
+  "iea": "agence intergouvernementale, analyses institutionnelles",
+  "bloombergnef": "recherche spécialisée transition énergétique, orientation pro-décarbonation",
+};
+
+function normalizeSource(s) {
+  return String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+}
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -20,17 +52,24 @@ export default async function handler(req, res) {
       const catHint =
         category && category !== "all"
           ? `Concentre-toi sur la catégorie "${category}".`
-          : "Couvre les 4 catégories : nucléaire, renouvelables, pétrole/gaz, géopolitique de l'énergie.";
+          : "Couvre l'ensemble du spectre énergie : nucléaire, renouvelables (solaire, éolien, hydro), stockage & batteries, pétrole/gaz, géopolitique de l'énergie.";
       const sources = isFr
-        ? "presse française : Les Échos, Connaissance des Énergies, La Tribune, Le Monde, Reporterre, Contexte"
-        : "presse internationale : Reuters, Bloomberg, Financial Times, IEA, Energy Intelligence, S&P Global";
+        ? "presse française : Les Échos, Connaissance des Énergies, La Tribune, Le Monde, Reporterre, Contexte, L'Usine Nouvelle, BFM Business"
+        : "presse internationale : Reuters, Bloomberg, Financial Times, IEA, Energy Intelligence, S&P Global, BloombergNEF, Wall Street Journal";
 
-      const prompt = `Tu es un veilleur spécialisé énergie. Recherche sur le web les actualités énergie les plus importantes des 7 derniers jours dans la ${sources}. ${catHint}
+      const prompt = `Tu es un veilleur spécialisé énergie qui suit à la fois les technologies, les marchés et les entreprises du secteur. Recherche sur le web les actualités énergie les plus importantes des 7 derniers jours dans la ${sources}. ${catHint}
+
+Champs à couvrir largement (directs ET indirects) :
+- Batteries & stockage : stockage stationnaire sur réseau, gigafactories, véhicules électriques, hydrogène, gestion des réseaux électriques (grid, RTE, Enedis).
+- Entreprises du secteur : EDF, TotalEnergies, Engie, Orano, Framatome, RTE, ainsi que Tesla, CATL, Northvolt, Siemens Energy, Ørsted, Shell, BP, NextEra, etc. — leurs résultats financiers, fusions-acquisitions, gros contrats, investissements.
+- Signaux indirects : hausse de la demande électrique tirée par les data centers et l'IA, matières premières critiques (lithium, cuivre, terres rares, uranium), politiques et subventions, prix de l'électricité et du gaz.
 
 Réponds UNIQUEMENT avec un JSON valide (aucun texte autour, pas de backticks) de la forme :
 {"articles":[{"title":"...","source":"...","date":"AAAA-MM-JJ","summary":"résumé original de 1-2 phrases dans tes propres mots","url":"https://...","cat":"${CAT_LIST}","tab":"${isFr ? "fr" : "intl"}"}]}
 
-Règles : 5 à 8 articles maximum, résumés reformulés (jamais de texte copié), titres factuels, une seule catégorie par article.`;
+Choix de la catégorie : "stockage" pour batteries/VE/hydrogène/réseaux, "nucleaire", "renouvelables" pour solaire/éolien/hydro, "petrole" pour pétrole/gaz, "geopolitique" pour tensions, sanctions, accords internationaux. Une actualité d'entreprise se classe dans la filière concernée (ex : gigafactory → stockage, résultats de TotalEnergies → petrole).
+
+Règles : 6 à 9 articles maximum, résumés reformulés (jamais de texte copié), titres factuels, une seule catégorie par article.`;
 
       const data = await callClaude(apiKey, prompt, true);
       const parsed = extractJson(data);
@@ -127,6 +166,65 @@ ${ctxBlock}`;
       const answer = (data.content || [])
         .filter(b => b.type === "text").map(b => b.text).join("\n").trim();
       return res.status(200).json({ answer });
+    }
+
+    if (action === "analyze") {
+      const { article } = req.body;
+      if (!article || !article.title) {
+        return res.status(400).json({ error: "article manquant" });
+      }
+      const known = SOURCE_LEANING[normalizeSource(article.source)];
+      const leaningHint = known
+        ? `Orientation généralement attribuée à ${article.source} : ${known}. Reprends cette caractérisation en la nuançant.`
+        : `Décris l'orientation éditoriale généralement attribuée à "${article.source}" si elle est connue, sinon indique "orientation non caractérisée".`;
+
+      const prompt = `Tu analyses un article de veille énergie pour aider un lecteur à l'esprit critique. Article :
+- Titre : ${article.title}
+- Source : ${article.source || "inconnue"}
+- Date : ${article.date || "inconnue"}
+- Résumé : ${article.summary || "(non fourni)"}
+- URL : ${article.url || "(non fournie)"}
+
+Si l'URL est fournie, tu peux la consulter sur le web pour identifier l'auteur et préciser l'analyse.
+
+Produis un objet JSON STRICT (aucun texte autour, pas de backticks) :
+{
+  "conclusion": "2 à 3 phrases dans tes propres mots : le point clé à retenir de l'article et sa portée.",
+  "sourceLeaning": "Orientation éditoriale généralement attribuée à la source (spectre politique et/ou ligne économique), formulée de façon neutre et nuancée. Commence par 'Généralement décrit comme…'. Précise que c'est une caractérisation approximative et contestable. Si inconnue, dis-le simplement.",
+  "authorContext": "Contexte UNIQUEMENT professionnel et public sur l'auteur si identifiable : média, spécialité, sujets habituellement couverts, expertise apparente sur l'énergie. N'inclus AUCUNE information privée (vie personnelle, adresse, famille…). Si l'auteur n'est pas identifiable, écris 'Auteur non identifié'."
+}
+
+${leaningHint}
+Reste factuel, équilibré, et n'invente jamais d'information sur une personne.`;
+
+      const body = {
+        model: "claude-sonnet-4-6",
+        max_tokens: 1500,
+        messages: [{ role: "user", content: prompt }],
+        tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 2 }],
+      };
+      const r = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) {
+        const t = await r.text();
+        throw new Error(`Anthropic ${r.status}: ${t.slice(0, 300)}`);
+      }
+      const data = await r.json();
+      const parsed = extractJson(data) || {};
+      return res.status(200).json({
+        analysis: {
+          conclusion: parsed.conclusion || "Analyse indisponible.",
+          sourceLeaning: parsed.sourceLeaning || (known ? `Généralement décrit comme ${known} (caractérisation approximative).` : "Orientation non caractérisée."),
+          authorContext: parsed.authorContext || "Auteur non identifié.",
+        },
+      });
     }
 
     return res.status(400).json({ error: "action inconnue" });

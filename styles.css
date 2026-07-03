@@ -7,6 +7,7 @@
   --accent: #1B2430;
   --nucleaire: #7C5CBF;
   --renouvelables: #2E9E6B;
+  --stockage: #0E9BA6;
   --petrole: #C97A2B;
   --geopolitique: #3B6EA5;
   --radius: 14px;
@@ -137,6 +138,7 @@ body {
 .chip[data-cat="all"].active { background: var(--ink); border-color: var(--ink); }
 .chip.cat-nucleaire.active { background: var(--nucleaire); border-color: var(--nucleaire); }
 .chip.cat-renouvelables.active { background: var(--renouvelables); border-color: var(--renouvelables); }
+.chip.cat-stockage.active { background: var(--stockage); border-color: var(--stockage); }
 .chip.cat-petrole.active { background: var(--petrole); border-color: var(--petrole); }
 .chip.cat-geopolitique.active { background: var(--geopolitique); border-color: var(--geopolitique); }
 
@@ -168,6 +170,7 @@ body {
 }
 .card[data-cat="nucleaire"]::before { background: var(--nucleaire); }
 .card[data-cat="renouvelables"]::before { background: var(--renouvelables); }
+.card[data-cat="stockage"]::before { background: var(--stockage); }
 .card[data-cat="petrole"]::before { background: var(--petrole); }
 .card[data-cat="geopolitique"]::before { background: var(--geopolitique); }
 
@@ -187,6 +190,7 @@ body {
 }
 .card[data-cat="nucleaire"] .cat-label { color: var(--nucleaire); }
 .card[data-cat="renouvelables"] .cat-label { color: var(--renouvelables); }
+.card[data-cat="stockage"] .cat-label { color: var(--stockage); }
 .card[data-cat="petrole"] .cat-label { color: var(--petrole); }
 .card[data-cat="geopolitique"] .cat-label { color: var(--geopolitique); }
 
@@ -465,3 +469,94 @@ button:focus-visible, a:focus-visible, textarea:focus-visible {
 
 /* Correctif : forcer la fermeture des panneaux quand [hidden] est présent */
 .synth-panel[hidden], .ask-panel[hidden] { display: none !important; }
+
+/* ---------- Carnet de route ---------- */
+.carnet-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 2px 4px;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+  max-width: 680px;
+  margin: 0 auto;
+  width: 100%;
+}
+.btn-export {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  background: var(--ink);
+  color: #FFF;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+.btn-export:active { transform: scale(0.97); }
+
+.carnet-entry {
+  position: relative;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px 16px 14px 20px;
+  border: 1px solid var(--line);
+  max-width: 680px;
+  margin: 0 auto;
+  width: 100%;
+  overflow: hidden;
+}
+.carnet-entry::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 6px;
+  background: var(--ink-soft);
+}
+.carnet-entry[data-cat="nucleaire"]::before { background: var(--nucleaire); }
+.carnet-entry[data-cat="renouvelables"]::before { background: var(--renouvelables); }
+.carnet-entry[data-cat="stockage"]::before { background: var(--stockage); }
+.carnet-entry[data-cat="petrole"]::before { background: var(--petrole); }
+.carnet-entry[data-cat="geopolitique"]::before { background: var(--geopolitique); }
+
+.carnet-meta {
+  display: flex;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+.carnet-entry h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.35;
+  margin-bottom: 12px;
+}
+.carnet-entry h2 a { color: inherit; text-decoration: none; }
+
+.carnet-block { margin-bottom: 10px; }
+.carnet-block .lbl {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  margin-bottom: 3px;
+}
+.carnet-block p { font-size: 0.9rem; line-height: 1.5; }
+.carnet-block p.soft { color: var(--ink-soft); }
+
+.carnet-del {
+  margin-top: 4px;
+  font-size: 0.76rem;
+  background: none;
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+  border-radius: 8px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.act-carnet { color: var(--geopolitique); border-color: var(--geopolitique); font-weight: 600; }
