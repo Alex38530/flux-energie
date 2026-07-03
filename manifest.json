@@ -1,16 +1,29 @@
 {
-  "name": "Flux Énergie — veille presse",
-  "short_name": "Flux Énergie",
-  "description": "Tableau de bord de veille sur l'actualité énergétique, presse française et internationale.",
+  "name": "Fil — intelligence énergie",
+  "short_name": "Fil",
+  "description": "Suivez l'actualité énergie fil par fil : des briefings de synthèse qui croisent les sources et gardent la continuité.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#EEF1F4",
-  "theme_color": "#1B2430",
+  "background_color": "#F1F2EE",
+  "theme_color": "#15171C",
   "lang": "fr",
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

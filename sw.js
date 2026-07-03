@@ -1,4 +1,4 @@
-const CACHE = "flux-energie-v7";
+const CACHE = "fil-v1";
 const ASSETS = ["./", "./index.html", "./styles.css", "./app.js", "./manifest.json"];
 
 self.addEventListener("install", (e) => {

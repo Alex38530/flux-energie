@@ -3,87 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1B2430">
+<meta name="theme-color" content="#15171C">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Flux Énergie">
+<meta name="apple-mobile-web-app-title" content="Fil">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<title>Flux Énergie — veille</title>
+<title>Fil — intelligence énergie</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
 <header class="topbar">
-  <div class="brand">
-    <svg class="brand-line" viewBox="0 0 120 24" aria-hidden="true">
-      <polyline points="0,18 22,18 34,6 52,6 62,18 84,18 94,10 120,10" />
-    </svg>
-    <h1>Flux Énergie</h1>
+  <button class="back" id="backBtn" hidden aria-label="Retour aux fils">←</button>
+  <div class="wordmark">
+    <span class="wm-node"></span>Fil
   </div>
-  <button id="refreshBtn" class="btn-refresh" aria-label="Actualiser les actualités">
-    <span class="refresh-icon">⟳</span> Actualiser
-  </button>
+  <span class="wm-sub">intelligence énergie</span>
 </header>
 
-<nav class="tabs" role="tablist">
-  <button class="tab active" data-tab="intl" role="tab" aria-selected="true">Internationale</button>
-  <button class="tab" data-tab="fr" role="tab" aria-selected="false">Française</button>
-  <button class="tab" data-tab="saved" role="tab" aria-selected="false">Sauvegardés</button>
-  <button class="tab" data-tab="carnet" role="tab" aria-selected="false">Carnet</button>
-  <button class="tab" data-tab="recap" role="tab" aria-selected="false">Récap</button>
-</nav>
-
-<div class="filters" id="filters">
-  <button class="chip active" data-cat="all">Tout</button>
-  <button class="chip cat-nucleaire" data-cat="nucleaire">Nucléaire</button>
-  <button class="chip cat-renouvelables" data-cat="renouvelables">Renouvelables</button>
-  <button class="chip cat-stockage" data-cat="stockage">Batteries & stockage</button>
-  <button class="chip cat-petrole" data-cat="petrole">Pétrole & gaz</button>
-  <button class="chip cat-geopolitique" data-cat="geopolitique">Géopolitique</button>
-</div>
-
-<div class="actions-row">
-  <button id="synthBtn" class="btn-synth">📋 Synthèse du flux</button>
-  <button id="askOpenBtn" class="btn-ask">💬 Questions</button>
-</div>
-
-<section id="synthPanel" class="synth-panel" hidden>
-  <div class="synth-head">
-    <h2>Point d'actualité</h2>
-    <button id="synthClose" class="panel-close" aria-label="Fermer">✕</button>
-  </div>
-  <div id="synthContent" class="synth-content"></div>
-</section>
-
-<section id="askPanel" class="ask-panel" hidden>
-  <div class="ask-head">
-    <h2>Questions sur l'actualité énergie</h2>
-    <button id="askClose" class="panel-close" aria-label="Fermer">✕</button>
-  </div>
-  <div id="askThread" class="ask-thread">
-    <p class="ask-hint">Pose une question — je réponds en m'appuyant sur les articles de ton flux et une recherche web si besoin. Ex : « Où en est l'EPR2 ? », « Résume la semaine sur le gaz. »</p>
-  </div>
-  <div class="ask-input-row">
-    <textarea id="askInput" rows="1" placeholder="Ta question…"></textarea>
-    <button id="askSend" class="btn-send">➤</button>
-  </div>
-</section>
-
-<main id="feed" class="feed" aria-live="polite">
-  <div class="empty" id="emptyState">
-    <p class="empty-title">Le flux est vide.</p>
-    <p>Appuie sur <strong>Actualiser</strong> pour lancer la veille, ou colle un lien ci-dessous.</p>
-  </div>
-</main>
-
-<section class="paste-zone">
-  <textarea id="pasteInput" rows="2" placeholder="Colle un lien ou un extrait d'article…"></textarea>
-  <button id="classifyBtn" class="btn-classify">Classer</button>
-</section>
+<main id="view" class="view"></main>
 
 <div id="toast" class="toast" role="status"></div>
 
