@@ -1,0 +1,464 @@
+:root {
+  --bg: #EEF1F4;
+  --surface: #FFFFFF;
+  --ink: #1B2430;
+  --ink-soft: #5A6673;
+  --line: #D8DEE5;
+  --accent: #1B2430;
+  --nucleaire: #7C5CBF;
+  --renouvelables: #2E9E6B;
+  --petrole: #C97A2B;
+  --geopolitique: #3B6EA5;
+  --radius: 14px;
+  --pad: 16px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100dvh;
+  padding-bottom: 120px;
+}
+
+/* ---------- Header ---------- */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: calc(env(safe-area-inset-top, 0px) + 12px) var(--pad) 12px;
+  background: var(--ink);
+  color: #F4F6F8;
+}
+
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+
+.brand h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.brand-line {
+  width: 64px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.brand-line polyline {
+  fill: none;
+  stroke: #F5C04E;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 200;
+  stroke-dashoffset: 200;
+  animation: draw 1.4s ease forwards;
+}
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .brand-line polyline { animation: none; stroke-dashoffset: 0; }
+}
+
+.btn-refresh {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: #F5C04E;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-refresh:active { transform: scale(0.97); }
+.btn-refresh:disabled { opacity: 0.6; }
+.btn-refresh.loading .refresh-icon { display: inline-block; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- Tabs ---------- */
+.tabs {
+  position: sticky;
+  top: 56px;
+  z-index: 19;
+  display: flex;
+  background: var(--ink);
+  padding: 0 var(--pad);
+  gap: 4px;
+}
+.tab {
+  flex: 1;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #9AA6B2;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 10px 4px 12px;
+  cursor: pointer;
+}
+.tab.active { color: #FFF; border-bottom-color: #F5C04E; }
+
+/* ---------- Filters ---------- */
+.filters {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 12px var(--pad);
+  scrollbar-width: none;
+}
+.filters::-webkit-scrollbar { display: none; }
+
+.chip {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  white-space: nowrap;
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-soft);
+  border-radius: 999px;
+  padding: 7px 14px;
+  cursor: pointer;
+}
+.chip.active { color: #FFF; }
+.chip[data-cat="all"].active { background: var(--ink); border-color: var(--ink); }
+.chip.cat-nucleaire.active { background: var(--nucleaire); border-color: var(--nucleaire); }
+.chip.cat-renouvelables.active { background: var(--renouvelables); border-color: var(--renouvelables); }
+.chip.cat-petrole.active { background: var(--petrole); border-color: var(--petrole); }
+.chip.cat-geopolitique.active { background: var(--geopolitique); border-color: var(--geopolitique); }
+
+/* ---------- Feed ---------- */
+.feed {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px var(--pad) var(--pad);
+  max-width: 680px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.card {
+  position: relative;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 14px 14px 12px 20px;
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.card::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 6px;
+  background: var(--ink-soft);
+}
+.card[data-cat="nucleaire"]::before { background: var(--nucleaire); }
+.card[data-cat="renouvelables"]::before { background: var(--renouvelables); }
+.card[data-cat="petrole"]::before { background: var(--petrole); }
+.card[data-cat="geopolitique"]::before { background: var(--geopolitique); }
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.card-meta .cat-label {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.card[data-cat="nucleaire"] .cat-label { color: var(--nucleaire); }
+.card[data-cat="renouvelables"] .cat-label { color: var(--renouvelables); }
+.card[data-cat="petrole"] .cat-label { color: var(--petrole); }
+.card[data-cat="geopolitique"] .cat-label { color: var(--geopolitique); }
+
+.card h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.35;
+  margin-bottom: 6px;
+}
+.card h2 a { color: inherit; text-decoration: none; }
+.card h2 a:active { opacity: 0.7; }
+
+.card p.summary {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.card-actions .act {
+  font-size: 0.78rem;
+  font-weight: 500;
+  border: 1px solid var(--line);
+  background: none;
+  color: var(--ink-soft);
+  border-radius: 8px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.card-actions .act.on-later { background: var(--ink); color: #FFF; border-color: var(--ink); }
+.card-actions .act.on-important { background: #C0392B; color: #FFF; border-color: #C0392B; }
+.card-actions .link-out {
+  margin-left: auto;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--geopolitique);
+  text-decoration: none;
+}
+
+.badge-important {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 0.9rem;
+}
+
+/* ---------- Empty / loading ---------- */
+.empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--ink-soft);
+}
+.empty-title {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.skeleton {
+  height: 110px;
+  border-radius: var(--radius);
+  background: linear-gradient(90deg, #E3E8ED 25%, #F2F5F8 50%, #E3E8ED 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite;
+}
+@keyframes shimmer { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+
+/* ---------- Paste zone ---------- */
+.paste-zone {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  display: flex;
+  gap: 8px;
+  padding: 10px var(--pad) calc(env(safe-area-inset-bottom, 0px) + 10px);
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  max-width: 680px;
+  margin: 0 auto;
+}
+.paste-zone textarea {
+  flex: 1;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 12px;
+  resize: none;
+  outline: none;
+}
+.paste-zone textarea:focus { border-color: var(--ink); }
+.btn-classify {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 500;
+  font-size: 0.9rem;
+  background: var(--ink);
+  color: #FFF;
+  border: none;
+  border-radius: 10px;
+  padding: 0 18px;
+  cursor: pointer;
+}
+.btn-classify:disabled { opacity: 0.5; }
+
+/* ---------- Toast ---------- */
+.toast {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--ink);
+  color: #FFF;
+  font-size: 0.85rem;
+  padding: 10px 18px;
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s;
+  z-index: 50;
+  max-width: 90vw;
+  text-align: center;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+button:focus-visible, a:focus-visible, textarea:focus-visible {
+  outline: 2px solid #F5C04E;
+  outline-offset: 2px;
+}
+
+/* ---------- Boutons Synthèse / Questions ---------- */
+.actions-row {
+  display: flex;
+  gap: 10px;
+  padding: 0 var(--pad) 12px;
+  max-width: 680px;
+  margin: 0 auto;
+  width: 100%;
+}
+.btn-synth, .btn-ask {
+  flex: 1;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 500;
+  font-size: 0.88rem;
+  border: 1.5px solid var(--ink);
+  border-radius: 10px;
+  padding: 10px;
+  cursor: pointer;
+}
+.btn-synth { background: var(--ink); color: #FFF; }
+.btn-ask { background: var(--surface); color: var(--ink); }
+.btn-synth:disabled, .btn-ask:disabled { opacity: 0.5; }
+
+/* ---------- Panneaux (synthèse + questions) ---------- */
+.synth-panel, .ask-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.synth-head, .ask-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px var(--pad);
+  background: var(--ink);
+  color: #FFF;
+}
+.synth-head h2, .ask-head h2 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1.05rem;
+}
+.panel-close {
+  background: none;
+  border: none;
+  color: #FFF;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.synth-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--pad);
+  max-width: 680px;
+  margin: 0 auto;
+  width: 100%;
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+.synth-content h3 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  margin: 18px 0 8px;
+}
+.synth-content h3:first-child { margin-top: 0; }
+.synth-content p { margin-bottom: 10px; }
+.synth-content .synth-loading { color: var(--ink-soft); text-align: center; padding: 40px 0; }
+
+/* ---------- Chat Questions ---------- */
+.ask-thread {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--pad);
+  max-width: 680px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ask-hint { color: var(--ink-soft); font-size: 0.88rem; line-height: 1.5; }
+.msg {
+  max-width: 88%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.msg.user {
+  align-self: flex-end;
+  background: var(--ink);
+  color: #FFF;
+  border-bottom-right-radius: 4px;
+}
+.msg.bot {
+  align-self: flex-start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-bottom-left-radius: 4px;
+}
+.msg.thinking { color: var(--ink-soft); font-style: italic; }
+
+.ask-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 10px var(--pad) calc(env(safe-area-inset-bottom, 0px) + 10px);
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+}
+.ask-input-row textarea {
+  flex: 1;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.92rem;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  resize: none;
+  outline: none;
+  max-height: 100px;
+}
+.ask-input-row textarea:focus { border-color: var(--ink); }
+.btn-send {
+  background: var(--ink);
+  color: #FFF;
+  border: none;
+  border-radius: 10px;
+  padding: 0 16px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.btn-send:disabled { opacity: 0.5; }
