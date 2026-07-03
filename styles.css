@@ -462,3 +462,6 @@ button:focus-visible, a:focus-visible, textarea:focus-visible {
   cursor: pointer;
 }
 .btn-send:disabled { opacity: 0.5; }
+
+/* Correctif : forcer la fermeture des panneaux quand [hidden] est présent */
+.synth-panel[hidden], .ask-panel[hidden] { display: none !important; }
