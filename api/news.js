@@ -1,6 +1,12 @@
 // Fonction serverless Vercel — /api/news
 // Nécessite la variable d'environnement ANTHROPIC_API_KEY (à définir dans Vercel).
 
+// ⚙️ RÉGLAGE COÛT / QUALITÉ — change ces deux lignes pour ajuster ta facture.
+// Haiku = ~4× moins cher que Sonnet, très bien pour extraire/résumer des recherches.
+// Si une action échoue après changement, remets "claude-sonnet-4-6".
+const MODEL_FAST = "claude-haiku-4-5-20251001"; // recherches + carnet (tâches lourdes)
+const MODEL_SMART = "claude-sonnet-4-6";        // chat Q/R + synthèse (qualité)
+
 const CAT_LIST = "nucleaire | renouvelables | stockage | petrole | geopolitique";
 
 // Orientations éditoriales GÉNÉRALEMENT attribuées aux médias.
@@ -69,9 +75,9 @@ Réponds UNIQUEMENT avec un JSON valide (aucun texte autour, pas de backticks) d
 
 Choix de la catégorie : "stockage" pour batteries/VE/hydrogène/réseaux, "nucleaire", "renouvelables" pour solaire/éolien/hydro, "petrole" pour pétrole/gaz, "geopolitique" pour tensions, sanctions, accords internationaux. Une actualité d'entreprise se classe dans la filière concernée (ex : gigafactory → stockage, résultats de TotalEnergies → petrole).
 
-Règles : 6 à 9 articles maximum, résumés reformulés (jamais de texte copié), titres factuels, une seule catégorie par article.`;
+Règles : 5 à 7 articles maximum, résumés reformulés (jamais de texte copié), titres factuels, une seule catégorie par article. Fais des recherches ciblées et peu nombreuses pour rester économe.`;
 
-      const data = await callClaude(apiKey, prompt, true);
+      const data = await callClaude(apiKey, prompt, true, { model: MODEL_FAST, maxTokens: 1400, maxUses: 2 });
       const parsed = extractJson(data);
       return res.status(200).json({ articles: parsed?.articles || [] });
     }
@@ -94,7 +100,7 @@ Si c'est une URL, recherche-la sur le web pour identifier l'article. Détermine 
 Réponds UNIQUEMENT avec un JSON valide (aucun texte autour, pas de backticks) :
 {"article":{...}}`;
 
-      const data = await callClaude(apiKey, prompt, true);
+      const data = await callClaude(apiKey, prompt, true, { model: MODEL_FAST, maxTokens: 700, maxUses: 1 });
       const parsed = extractJson(data);
       return res.status(200).json({ article: parsed?.article || null });
     }
@@ -122,7 +128,7 @@ Un court paragraphe par catégorie présente dans les articles (nucléaire, reno
 
 Règles : uniquement du texte avec titres ###, pas de listes à puces, tout dans tes propres mots, ton factuel et direct, 250 mots maximum.`;
 
-      const data = await callClaude(apiKey, prompt, false);
+      const data = await callClaude(apiKey, prompt, false, { model: MODEL_SMART, maxTokens: 900 });
       const synthesis = (data.content || [])
         .filter(b => b.type === "text").map(b => b.text).join("\n").trim();
       return res.status(200).json({ synthesis });
@@ -143,11 +149,11 @@ Règles : uniquement du texte avec titres ###, pas de listes à puces, tout dans
 ${ctxBlock}`;
 
       const body = {
-        model: "claude-sonnet-4-6",
-        max_tokens: 1200,
+        model: MODEL_SMART,
+        max_tokens: 900,
         system,
         messages: history.map(m => ({ role: m.role, content: String(m.content).slice(0, 2000) })),
-        tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 2 }],
+        tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 1 }],
       };
       const r = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -198,10 +204,10 @@ ${leaningHint}
 Reste factuel, équilibré, et n'invente jamais d'information sur une personne.`;
 
       const body = {
-        model: "claude-sonnet-4-6",
-        max_tokens: 1500,
+        model: MODEL_FAST,
+        max_tokens: 900,
         messages: [{ role: "user", content: prompt }],
-        tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 2 }],
+        tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 1 }],
       };
       const r = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
@@ -234,14 +240,14 @@ Reste factuel, équilibré, et n'invente jamais d'information sur une personne.`
   }
 }
 
-async function callClaude(apiKey, prompt, withSearch) {
+async function callClaude(apiKey, prompt, withSearch, opts = {}) {
   const body = {
-    model: "claude-sonnet-4-6",
-    max_tokens: 2500,
+    model: opts.model || MODEL_FAST,
+    max_tokens: opts.maxTokens || 1200,
     messages: [{ role: "user", content: prompt }],
   };
   if (withSearch) {
-    body.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: 4 }];
+    body.tools = [{ type: "web_search_20250305", name: "web_search", max_uses: opts.maxUses || 2 }];
   }
   const r = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
