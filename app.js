@@ -13,6 +13,8 @@ const state = {
   cat: "all",
   articles: load("articles", []),   // {id, tab, cat, title, source, date, summary, url, later, important}
   carnet: load("carnet", []),       // {id, date, title, source, url, conclusion, sourceLeaning, authorContext}
+  digests: load("digests", []),     // {id, date, domain, period, scope, ...digest}
+  recapForm: { domain: "Vue d'ensemble", period: "hebdomadaire", scope: "both" },
 };
 
 function load(key, fallback) {
@@ -25,6 +27,9 @@ function persist() {
 function persistCarnet() {
   localStorage.setItem("carnet", JSON.stringify(state.carnet));
 }
+function persistDigests() {
+  localStorage.setItem("digests", JSON.stringify(state.digests));
+}
 
 const feed = document.getElementById("feed");
 const emptyState = document.getElementById("emptyState");
@@ -35,12 +40,17 @@ const toast = document.getElementById("toast");
 
 /* ---------- Rendu ---------- */
 function render() {
-  feed.querySelectorAll(".card, .skeleton, .carnet-entry, .carnet-toolbar").forEach(el => el.remove());
+  feed.querySelectorAll(".card, .skeleton, .carnet-entry, .carnet-toolbar, .recap-form, .recap-article, .recap-history").forEach(el => el.remove());
 
-  // Les filtres de catégorie n'ont pas de sens dans le carnet
-  document.getElementById("filters").style.display = state.tab === "carnet" ? "none" : "flex";
+  // Les filtres de catégorie n'ont pas de sens dans le carnet ni le récap
+  document.getElementById("filters").style.display =
+    (state.tab === "carnet" || state.tab === "recap") ? "none" : "flex";
+  // La zone "coller un lien" n'a de sens que sur les flux d'articles
+  document.querySelector(".paste-zone").style.display =
+    (state.tab === "carnet" || state.tab === "recap") ? "none" : "flex";
 
   if (state.tab === "carnet") { renderCarnet(); return; }
+  if (state.tab === "recap") { renderRecap(); return; }
 
   let items = state.articles.filter(a => {
     if (state.tab === "saved") return a.later || a.important;
@@ -348,6 +358,220 @@ classifyBtn.addEventListener("click", async () => {
     classifyBtn.textContent = "Classer";
   }
 });
+
+/* ================= RÉCAP (briefing multi-sources) ================= */
+const RECAP_DOMAINS = [
+  "Vue d'ensemble", "Nucléaire", "Solaire & éolien", "Batteries & stockage",
+  "Pétrole & gaz", "Hydrogène", "Réseaux & marché de l'électricité",
+  "Véhicules électriques", "Géopolitique de l'énergie",
+];
+const RECAP_PERIODS = [
+  { v: "quotidien", l: "Quotidien" },
+  { v: "hebdomadaire", l: "Hebdomadaire" },
+  { v: "mensuel", l: "Mensuel" },
+  { v: "annuel", l: "Annuel" },
+];
+const RECAP_SCOPES = [
+  { v: "both", l: "Les deux" },
+  { v: "fr", l: "Française" },
+  { v: "intl", l: "Internationale" },
+];
+
+let recapCurrent = null; // récap affiché
+
+function renderRecap() {
+  emptyState.style.display = "none";
+
+  // --- Formulaire ---
+  const form = document.createElement("div");
+  form.className = "recap-form";
+  form.innerHTML = `
+    <label>Domaine
+      <select id="rcDomain">${RECAP_DOMAINS.map(d => `<option ${d === state.recapForm.domain ? "selected" : ""}>${esc(d)}</option>`).join("")}</select>
+    </label>
+    <div class="recap-form-row">
+      <label>Période
+        <select id="rcPeriod">${RECAP_PERIODS.map(p => `<option value="${p.v}" ${p.v === state.recapForm.period ? "selected" : ""}>${p.l}</option>`).join("")}</select>
+      </label>
+      <label>Sources
+        <select id="rcScope">${RECAP_SCOPES.map(s => `<option value="${s.v}" ${s.v === state.recapForm.scope ? "selected" : ""}>${s.l}</option>`).join("")}</select>
+      </label>
+    </div>
+    <button id="rcGenerate" class="btn-generate">Générer le récap</button>
+    <p class="recap-cost">Un récap lance plusieurs recherches croisées (~0,15-0,30 $ selon la période).</p>`;
+  feed.appendChild(form);
+
+  form.querySelector("#rcDomain").addEventListener("change", e => state.recapForm.domain = e.target.value);
+  form.querySelector("#rcPeriod").addEventListener("change", e => state.recapForm.period = e.target.value);
+  form.querySelector("#rcScope").addEventListener("change", e => state.recapForm.scope = e.target.value);
+  form.querySelector("#rcGenerate").addEventListener("click", generateRecap);
+
+  // --- Historique des récaps ---
+  if (state.digests.length) {
+    const hist = document.createElement("div");
+    hist.className = "recap-history";
+    hist.innerHTML = `<span class="recap-history-title">Récaps précédents</span>` +
+      state.digests.map(d =>
+        `<button class="recap-history-item" data-id="${d.id}">${esc(d.title)} · <em>${esc(d.date)}</em></button>`).join("");
+    feed.appendChild(hist);
+    hist.querySelectorAll(".recap-history-item").forEach(b => {
+      b.addEventListener("click", () => {
+        recapCurrent = state.digests.find(d => d.id === b.dataset.id) || null;
+        render();
+      });
+    });
+  }
+
+  // --- Article récap affiché ---
+  if (recapCurrent) feed.appendChild(recapArticleEl(recapCurrent));
+}
+
+async function generateRecap() {
+  const btn = document.getElementById("rcGenerate");
+  btn.disabled = true;
+  btn.textContent = "Génération… (30-60 s)";
+  // squelette de chargement
+  const old = feed.querySelector(".recap-article");
+  if (old) old.remove();
+  const sk = document.createElement("div");
+  sk.className = "recap-article";
+  sk.innerHTML = `<div class="skeleton" style="height:200px"></div>`;
+  feed.appendChild(sk);
+
+  try {
+    const res = await fetch("/api/news", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "digest", ...state.recapForm }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const digest = (await res.json()).digest;
+    if (!digest || !digest.title) throw new Error("Récap vide");
+    const entry = {
+      id: crypto.randomUUID(),
+      date: new Date().toISOString().slice(0, 10),
+      domain: state.recapForm.domain,
+      period: state.recapForm.period,
+      scope: state.recapForm.scope,
+      ...digest,
+    };
+    state.digests.unshift(entry);
+    state.digests = state.digests.slice(0, 20); // garde les 20 derniers
+    persistDigests();
+    recapCurrent = entry;
+    render();
+    showToast("Récap généré ✓");
+  } catch (e) {
+    sk.remove();
+    showToast("Échec de la génération — réessaie");
+    console.error(e);
+    btn.disabled = false;
+    btn.textContent = "Générer le récap";
+  }
+}
+
+function recapArticleEl(d) {
+  const el = document.createElement("article");
+  el.className = "recap-article";
+
+  const figures = (d.keyFigures || []).map(f =>
+    `<div class="kf"><span class="kf-value">${esc(f.value)}</span><span class="kf-label">${esc(f.label)}</span>${f.context ? `<span class="kf-ctx">${esc(f.context)}</span>` : ""}</div>`).join("");
+
+  const charts = (d.charts || []).map(c => svgChart(c)).join("");
+
+  const sections = (d.sections || []).map(s =>
+    `<section class="recap-section"><h3>${esc(s.heading)}</h3><p>${esc(s.body)}</p></section>`).join("");
+
+  const sources = (d.sources || []).length
+    ? `<div class="recap-sources"><span class="lbl">Sources croisées</span> ${d.sources.map(s => esc(s)).join(" · ")}</div>` : "";
+
+  el.innerHTML = `
+    <div class="recap-top">
+      <span class="recap-badge">${esc(d.domain || "")} · ${esc(periodLabelOf(d.period))}</span>
+      <button class="recap-export" title="Exporter en .md">⬇ .md</button>
+    </div>
+    <h1 class="recap-title">${esc(d.title)}</h1>
+    <p class="recap-period">${esc(d.periodLabel || "")}</p>
+    ${d.summary ? `<p class="recap-summary">${esc(d.summary)}</p>` : ""}
+    ${figures ? `<div class="kf-grid">${figures}</div>` : ""}
+    ${charts}
+    ${sections}
+    ${sources}`;
+
+  el.querySelector(".recap-export").addEventListener("click", () => exportRecap(d));
+  return el;
+}
+
+function periodLabelOf(v) {
+  const p = RECAP_PERIODS.find(x => x.v === v);
+  return p ? p.l : (v || "");
+}
+
+/* --- Générateur de graphiques SVG (bar/line), sans dépendance --- */
+function svgChart(c) {
+  const series = (c.series || []).filter(p => typeof p.value === "number" && isFinite(p.value));
+  if (series.length < 2) return "";
+  const W = 620, H = 240, padL = 48, padR = 16, padT = 28, padB = 40;
+  const iw = W - padL - padR, ih = H - padT - padB;
+  const vals = series.map(p => p.value);
+  const maxV = Math.max(...vals, 0), minV = Math.min(...vals, 0);
+  const span = (maxV - minV) || 1;
+  const y = v => padT + ih - ((v - minV) / span) * ih;
+  const title = esc(c.title || "");
+  const unit = c.unit ? esc(c.unit) : "";
+
+  // axes + libellés
+  let g = `<text x="${padL}" y="18" class="ch-title">${title}${unit ? ` (${unit})` : ""}</text>`;
+  g += `<line x1="${padL}" y1="${y(minV)}" x2="${W - padR}" y2="${y(minV)}" class="ch-axis"/>`;
+
+  if ((c.type || "bar") === "line") {
+    const step = iw / (series.length - 1);
+    const pts = series.map((p, i) => `${padL + i * step},${y(p.value)}`).join(" ");
+    g += `<polyline points="${pts}" class="ch-line"/>`;
+    series.forEach((p, i) => {
+      const cx = padL + i * step;
+      g += `<circle cx="${cx}" cy="${y(p.value)}" r="3.5" class="ch-dot"/>`;
+      g += `<text x="${cx}" y="${y(p.value) - 8}" class="ch-val">${esc(String(p.value))}</text>`;
+      g += `<text x="${cx}" y="${H - 14}" class="ch-lbl">${esc(p.label || "")}</text>`;
+    });
+  } else {
+    const bw = iw / series.length * 0.6;
+    const gap = iw / series.length;
+    series.forEach((p, i) => {
+      const cx = padL + i * gap + (gap - bw) / 2;
+      const yy = y(p.value), y0 = y(Math.min(0, minV));
+      const h = Math.abs(y0 - yy);
+      g += `<rect x="${cx}" y="${Math.min(yy, y0)}" width="${bw}" height="${h}" class="ch-bar"/>`;
+      g += `<text x="${cx + bw / 2}" y="${Math.min(yy, y0) - 6}" class="ch-val">${esc(String(p.value))}</text>`;
+      g += `<text x="${cx + bw / 2}" y="${H - 14}" class="ch-lbl">${esc(p.label || "")}</text>`;
+    });
+  }
+  return `<svg class="recap-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${title}">${g}</svg>`;
+}
+
+function exportRecap(d) {
+  const L = [`# ${d.title}`, `*${d.domain} — ${d.periodLabel || periodLabelOf(d.period)}*`, ""];
+  if (d.summary) { L.push(d.summary, ""); }
+  if ((d.keyFigures || []).length) {
+    L.push("## Chiffres clés", "");
+    d.keyFigures.forEach(f => L.push(`- **${f.value}** — ${f.label}${f.context ? ` (${f.context})` : ""}`));
+    L.push("");
+  }
+  (d.sections || []).forEach(s => { L.push(`## ${s.heading}`, "", s.body, ""); });
+  (d.charts || []).forEach(c => {
+    L.push(`### ${c.title}${c.unit ? ` (${c.unit})` : ""}`, "");
+    (c.series || []).forEach(p => L.push(`- ${p.label} : ${p.value}`));
+    L.push("");
+  });
+  if ((d.sources || []).length) L.push(`---`, `*Sources croisées : ${d.sources.join(", ")}*`);
+  const blob = new Blob([L.join("\n")], { type: "text/markdown" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `recap-${(d.domain || "energie").toLowerCase().replace(/[^a-z]+/g, "-")}-${d.date}.md`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 /* ---------- Service worker ---------- */
 if ("serviceWorker" in navigator) {

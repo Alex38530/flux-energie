@@ -38,6 +38,7 @@ L'appli s'ouvre alors en plein écran, sans barre de navigateur.
 - **💬 Questions** : chat en temps réel — pose une question, la réponse s'appuie d'abord sur tes articles, puis sur une recherche web si nécessaire. L'historique du chat dure le temps de la session.
 - **＋ Carnet** (sur chaque article) : génère une analyse — conclusion en quelques phrases, orientation éditoriale généralement attribuée à la source, et contexte professionnel de l'auteur — puis l'archive dans l'onglet **Carnet**. Chaque ajout consomme un appel API (quelques centimes), d'où le bouton explicite.
 - **Onglet Carnet** : toutes tes analyses archivées, avec un bouton **Exporter (.md)** pour récupérer un fichier texte de tes traces.
+- **Onglet Récap** : génère un dossier de synthèse sur mesure. Choisis un **domaine** (nucléaire, solaire & éolien, batteries, pétrole & gaz, hydrogène, réseaux, VE, géopolitique, ou vue d'ensemble), une **période** (quotidien / hebdo / mensuel / annuel) et un **périmètre de sources** (française / internationale / les deux). L'appli croise les sources et produit un article structuré : chiffres clés, graphiques (quand des données existent), sections thématiques et liste des sources. Chaque récap est archivé (historique) et exportable en .md. C'est l'opération la plus complète, donc la plus coûteuse (~0,15-0,30 $).
 
 ⚠️ Les orientations de sources sont des caractérisations générales et contestables, fournies pour aider à l'esprit critique, pas des verdicts. Le contexte auteur se limite à l'information professionnelle et publique.
 

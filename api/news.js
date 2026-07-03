@@ -233,6 +233,64 @@ Reste factuel, équilibré, et n'invente jamais d'information sur une personne.`
       });
     }
 
+    if (action === "digest") {
+      const { domain, period, scope } = req.body;
+      const PERIODS = {
+        quotidien: "dernières 24-48 heures",
+        hebdomadaire: "7 derniers jours",
+        mensuel: "30 derniers jours",
+        annuel: "12 derniers mois",
+      };
+      const periodLabel = PERIODS[period] || PERIODS.hebdomadaire;
+      const scopeText =
+        scope === "fr"
+          ? "presse française (Les Échos, Connaissance des Énergies, La Tribune, Le Monde, Reporterre, L'Usine Nouvelle)"
+          : scope === "intl"
+          ? "presse internationale (Reuters, Bloomberg, Financial Times, IEA, BloombergNEF, S&P Global)"
+          : "presse française ET internationale, en croisant les deux (Les Échos, Connaissance des Énergies, Le Monde, Reuters, Bloomberg, Financial Times, IEA)";
+
+      const prompt = `Tu es un analyste énergie qui rédige un briefing de synthèse. Recherche sur le web l'actualité du domaine "${domain}" sur les ${periodLabel}, dans la ${scopeText}. Croise plusieurs sources : identifie les faits convergents, les chiffres, les tendances et les points de désaccord.
+
+Rédige un dossier structuré et RÉPONDS UNIQUEMENT avec un JSON valide (aucun texte autour, pas de backticks) :
+{
+  "title": "titre accrocheur et factuel du dossier",
+  "periodLabel": "libellé lisible de la période (ex: 'Semaine du 26 juin au 3 juillet 2026')",
+  "summary": "chapô de 2-3 phrases résumant l'essentiel de la période",
+  "sections": [
+    { "heading": "titre de section", "body": "2-4 phrases dans tes propres mots, en citant les sources par leur nom" }
+  ],
+  "keyFigures": [
+    { "label": "intitulé court", "value": "12 GW", "context": "précision en quelques mots + source" }
+  ],
+  "charts": [
+    { "type": "bar", "title": "titre du graphique", "unit": "GW", "series": [ { "label": "2023", "value": 10 }, { "label": "2024", "value": 14 } ] }
+  ],
+  "sources": ["Reuters", "IEA", "Les Échos"]
+}
+
+Règles STRICTES :
+- 3 à 5 sections, 3 à 6 chiffres clés.
+- N'INVENTE JAMAIS de chiffre. N'inclus un graphique QUE si tu disposes de vraies données chiffrées issues des sources (2 à 6 points, valeurs numériques réelles). Si tu n'as pas de données fiables, mets "charts": [].
+- type de graphique : "bar" ou "line" uniquement.
+- Reformule tout dans tes propres mots, ne recopie jamais de phrases d'articles.
+- Cite les sources par leur nom dans les sections et remplis "sources".
+- Ton factuel, précis, sans esbroufe.`;
+
+      const data = await callClaude(apiKey, prompt, true, { model: MODEL_SMART, maxTokens: 3200, maxUses: 4 });
+      const parsed = extractJson(data) || {};
+      return res.status(200).json({
+        digest: {
+          title: parsed.title || `Récap ${domain}`,
+          periodLabel: parsed.periodLabel || periodLabel,
+          summary: parsed.summary || "",
+          sections: Array.isArray(parsed.sections) ? parsed.sections : [],
+          keyFigures: Array.isArray(parsed.keyFigures) ? parsed.keyFigures : [],
+          charts: Array.isArray(parsed.charts) ? parsed.charts.filter(c => Array.isArray(c.series) && c.series.length >= 2) : [],
+          sources: Array.isArray(parsed.sources) ? parsed.sources : [],
+        },
+      });
+    }
+
     return res.status(400).json({ error: "action inconnue" });
   } catch (e) {
     console.error(e);
